@@ -1,24 +1,20 @@
-chrome.onWebNavigationCompleted.onComitted.addListener(function (tab) { // When the user navigates to a new page.
+chrome.webNavigation.onCommitted.addListener(function (details) {
+    // Only act if the navigation is in the main frame
+    if (details.frameId === 0) {
+        try {
+            // Parse the URL to extract the domain
+            const url = new URL(details.url);
+            const domain = url.hostname;
 
-    // If the tab is the main frame
-    if (tab.frameId === 0) {
-        chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
-            // Get the URL of the tab
-            let url = tabs[0].url;
-            let parsedUrl = new URL(url); // URL object
-            let domain = parsedUrl.hostname; // Get the domain of the URL
-
-            try {
-                if (domain.length < 1 || domain === null || domain === undefined) {
-                    return;
-                } else if (domain == "linkedin.com") { // If the domain is LinkedIn then inject the script
-                    chrome.tabs.executeScript({ file: "blocker.js" });
-                    return true;
-                }
-            } catch (error) {
-                console.log(error);
+            // Check if the domain is LinkedIn
+            if (domain.includes("linkedin.com")) {
+                chrome.scripting.executeScript({
+                    target: { tabId: details.tabId },
+                    files: ["blocker.js"]
+                });
             }
-        });
+        } catch (error) {
+            console.error("Error parsing URL or injecting script:", error);
+        }
     }
-
 });
